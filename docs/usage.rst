@@ -375,6 +375,16 @@ For example, if you have a JWT for a logged-in user, the `sub` claim would typic
 This value needs to be unique within your application's context so you can reliably identify who the token belongs to.
 While the `sub` claim is optional, it's a fundamental part of most JWT-based authentication systems.
 
+.. note::
+
+    The `sub` claim must be a string. ``jwt.encode`` raises ``TypeError``
+    for a non-string `sub`, and ``jwt.decode`` raises
+    ``InvalidSubjectError`` for a token carrying one. If your subject is
+    numeric (e.g. an integer user ID), convert it with ``str()`` before
+    encoding. Tokens already issued with a non-string `sub` are still
+    rejected by ``jwt.decode``; to accept them during a migration window,
+    decode with ``options={"verify_sub": False}`` until they expire.
+
 JWT ID Claim (jti)
 ~~~~~~~~~~~~~~~~~~
 
@@ -402,6 +412,15 @@ The `jti` claim is used to **prevent replay attacks**.
 A replay attack happens when a bad actor intercepts a valid token and uses it to make a request again.
 By storing the `jti` of every token you've already processed in a database or cache, you can check if a token has been used before.
 If a token with a previously-seen `jti` shows up, you can reject the request, stopping the attack.
+
+.. note::
+
+    The `jti` claim must be a string. ``jwt.encode`` raises ``TypeError``
+    for a non-string `jti`, and ``jwt.decode`` raises ``InvalidJTIError``
+    for a token carrying one. Tokens already issued with a non-string
+    `jti` are still rejected by ``jwt.decode``; to accept them during a
+    migration window, decode with ``options={"verify_jti": False}`` until
+    they expire.
 
 
 .. _key-length-validation:

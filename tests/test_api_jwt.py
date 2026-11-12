@@ -288,6 +288,38 @@ class TestJWT:
                 key="secret",
             )
 
+    def test_encode_with_non_str_sub(self, jwt: PyJWT) -> None:
+        """Encode must reject a non-string "sub", mirroring decode validation."""
+        with pytest.raises(TypeError):
+            jwt.encode(
+                {
+                    "sub": 123,
+                },
+                key="secret",
+            )
+
+    def test_encode_with_non_str_jti(self, jwt: PyJWT) -> None:
+        """Encode must reject a non-string "jti", mirroring decode validation."""
+        with pytest.raises(TypeError):
+            jwt.encode(
+                {
+                    "jti": 123,
+                },
+                key="secret",
+            )
+
+    def test_encode_decode_roundtrip_with_str_sub_and_jti(self, jwt: PyJWT) -> None:
+        """String "sub"/"jti" still round-trip through encode and decode."""
+        secret = "your-256-bit-secret"
+        token = jwt.encode(
+            {"sub": "user123", "jti": "unique-id-456"},
+            secret,
+            algorithm="HS256",
+        )
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        assert decoded["sub"] == "user123"
+        assert decoded["jti"] == "unique-id-456"
+
     def test_encode_with_typ(self, jwt: PyJWT) -> None:
         payload = {
             "iss": "https://scim.example.com",
@@ -1115,7 +1147,14 @@ class TestJWT:
             "sub": 1224344,
         }
         secret = "your-256-bit-secret"
-        token = jwt.encode(payload, secret, algorithm="HS256")
+        # Craft the token at the JWS layer: PyJWT.encode() now rejects a
+        # non-string "sub" at issue time, but decode must still reject such
+        # tokens issued by older versions or by other libraries.
+        token = jwt._jws.encode(
+            json.dumps(payload, separators=(",", ":")).encode(),
+            secret,
+            "HS256",
+        )
 
         with pytest.raises(InvalidSubjectError):
             jwt.decode(token, secret, algorithms=["HS256"])
@@ -1191,7 +1230,14 @@ class TestJWT:
             "jti": special_jti,
         }
         secret = "your-256-bit-secret"
-        token = jwt.encode(payload, secret, algorithm="HS256")
+        # Craft the token at the JWS layer: PyJWT.encode() now rejects a
+        # non-string "jti" at issue time, but decode must still reject such
+        # tokens issued by older versions or by other libraries.
+        token = jwt._jws.encode(
+            json.dumps(payload, separators=(",", ":")).encode(),
+            secret,
+            "HS256",
+        )
 
         with pytest.raises(InvalidJTIError):
             jwt.decode(token, secret, algorithms=["HS256"])

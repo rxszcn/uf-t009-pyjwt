@@ -140,6 +140,15 @@ class PyJWT:
         if "iss" in payload and not isinstance(payload["iss"], str):
             raise TypeError("Issuer (iss) must be a string.")
 
+        # Align the encode-side contract with decode-side validation
+        # (_validate_sub/_validate_jti): a token issued by this library
+        # must also pass this library's own verification.
+        if "sub" in payload and not isinstance(payload["sub"], str):
+            raise TypeError("Subject (sub) must be a string.")
+
+        if "jti" in payload and not isinstance(payload["jti"], str):
+            raise TypeError("JWT ID (jti) must be a string.")
+
         json_payload = self._encode_payload(
             payload,
             headers=headers,

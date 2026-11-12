@@ -13,6 +13,15 @@ Changed
 - Add public ``jwt.decode`` regression coverage for AWS ALB-style padded
   ES256 tokens, including rejection of tampered payloads and signatures,
   in `#1211 <https://github.com/jpadilla/pyjwt/pull/1211>`__.
+- ``jwt.encode`` now raises ``TypeError`` when the ``sub`` or ``jti`` claim
+  is not a string, mirroring the existing ``iss`` check (#1039) and the
+  decode-side validation added in #1005. Previously a non-string ``sub``
+  or ``jti`` could be signed but was then rejected by ``jwt.decode`` on
+  the same library. Tokens already issued with a numeric ``sub``/``jti``
+  keep their previous decode behavior (rejected by default); to accept
+  them during a migration window, decode with
+  ``options={"verify_sub": False}`` / ``options={"verify_jti": False}``
+  until they expire, and re-issue new tokens with string values.
 
 `v2.15.1 <https://github.com/jpadilla/pyjwt/compare/2.15.0...2.15.1>`__
 -----------------------------------------------------------------------
